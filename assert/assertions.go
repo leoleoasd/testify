@@ -82,16 +82,7 @@ func ObjectsAreEqual(expected, actual interface{}) bool {
 		if v1.Type() != v2.Type() {
 			return false
 		}
-		if v1.CanAddr() && v2.CanAddr() {
-			return deepEqual(v1, v2, make(map[deepEqualVisit]bool))
-		} else {
-			// Copy them to heap to make them addressable.
-			copyV1 := reflect.New(v1.Type()).Elem()
-			copyV1.Set(v1)
-			copyV2 := reflect.New(v1.Type()).Elem()
-			copyV2.Set(v2)
-			return deepEqual(copyV1, copyV2, make(map[deepEqualVisit]bool))
-		}
+		return deepEqual(v1, v2, make(map[deepEqualVisit]bool))
 	}
 	return reflect.DeepEqual(expected, actual)
 }
@@ -103,6 +94,16 @@ type deepEqualVisit struct {
 }
 
 func deepEqual(v1, v2 reflect.Value, visited map[deepEqualVisit]bool) bool {
+	if !v1.CanAddr() {
+		copyV1 := reflect.New(v1.Type()).Elem()
+		copyV1.Set(v1)
+		v1 = copyV1
+	}
+	if !v2.CanAddr() {
+		copyV2 := reflect.New(v1.Type()).Elem()
+		copyV2.Set(v2)
+		v2 = copyV2
+	}
 	if !v1.IsValid() || !v2.IsValid() {
 		return v1.IsValid() == v2.IsValid()
 	}
